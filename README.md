@@ -1,36 +1,115 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sure Next 💸
 
-## Getting Started
+A modern re-implementation of **Sure** (the open-source personal finance and wealth management app) built from the ground up using **Next.js (App Router with `src/`)**, **shadcn (Base UI primitives)**, **Better-Auth**, **Prisma ORM**, and **PostgreSQL**.
 
-First, run the development server:
+---
 
+## 🚀 Features
+
+- **Multi-Tenant Family & Account Domain:** Full financial separation by household/family with role-based access.
+- **Financial Accounts Management:** Supports Depository (Checking, Savings), Investments (Brokerage, 401k, Roth IRA), Crypto, Properties, Vehicles, Credit Cards, and Loans/Mortgages.
+- **Dynamic Cashflow & Money Flow:** Interactive bar charts tracking monthly inflows vs outflows and net savings rate.
+- **Net Worth Evolution:** Historical area charts visualizing net worth, total assets, and total liabilities over time.
+- **Category Spending Distribution:** Outflows donut chart with real-time percentage allocation and interactive legend.
+- **Filterable Transactions Feed:** Search transactions, filter by account, category, or cash movement type (Inflow / Outflow), and add/delete transactions.
+- **Monthly Category Budgeting:** Budget vs actual spending progress bars with over-budget alerts.
+- **Savings & Milestone Goals:** Visual goal progress cards with target dates and target amounts.
+- **Privacy Mode (`••••••`):** Toggle sensitive balance numbers on or off at any time for screen sharing or public recording.
+- **Base UI Component System:** Built with `@base-ui/react` and Tailwind CSS.
+- **Authentication with Better-Auth:** Email/password credentials, sessions, and user management.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework:** [Next.js](https://nextjs.org) 16 (App Router with `src/` directory)
+- **UI & Headless Components:** [shadcn](https://ui.shadcn.com) powered by **Base UI** (`@base-ui/react`) & Tailwind CSS
+- **Authentication:** [Better-Auth](https://better-auth.com)
+- **ORM & Database:** [Prisma](https://prisma.io) 7 with PostgreSQL
+- **Containerization:** Docker Compose for local PostgreSQL
+- **Charts & Visualization:** [Recharts](https://recharts.org)
+
+---
+
+## 🏁 Getting Started
+
+### 1. Prerequisites
+- [Node.js](https://nodejs.org) >= 20
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) (for running PostgreSQL locally)
+
+### 2. Start PostgreSQL Container
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Push Database Schema & Generate Prisma Client
+```bash
+npx prisma db push
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 4. Seed Realistic Demo Data
+Populate the database with a full demo family, accounts, transactions, budgets, and savings goals:
+```bash
+npx prisma db seed
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 5. Start Development Server
+```bash
+npm run dev
+```
 
-## Learn More
+Visit [http://localhost:3000](http://localhost:3000) to view the application.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🔑 Demo Credentials
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+If you seeded the database using `npx prisma db seed`, log in with:
 
-## Deploy on Vercel
+- **Email:** `user@example.com`
+- **Password:** `Password1!`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📁 Project Structure
+
+```
+sure-next/
+├── docker-compose.yml          # Local PostgreSQL container service
+├── prisma/
+│   ├── schema.prisma           # Relational schema (Better-Auth + Sure Domain)
+│   └── seed.ts                 # Realistic demo data seed script
+├── src/
+│   ├── actions/
+│   │   └── index.ts            # Server actions (Transactions, Accounts, Budgets, Goals)
+│   ├── app/
+│   │   ├── (app)/              # Authenticated application shell
+│   │   │   ├── layout.tsx      # Main layout (NavRail + AccountsSidebar + TopHeader)
+│   │   │   ├── page.tsx        # Dashboard
+│   │   │   ├── accounts/       # Accounts directory & detail views
+│   │   │   ├── transactions/   # Transactions table & filters
+│   │   │   ├── budgets/        # Monthly budget planner
+│   │   │   ├── goals/          # Savings goals
+│   │   │   ├── reports/        # Financial analytics
+│   │   │   └── settings/       # Household settings & demo credentials
+│   │   ├── (auth)/             # Auth pages (login, register)
+│   │   ├── api/auth/[...all]/  # Better-Auth route handler
+│   │   ├── globals.css         # Theme tokens & design system
+│   │   └── layout.tsx          # Root HTML layout with Providers
+│   ├── components/
+│   │   ├── ui/                 # Base UI shadcn components (button, card, dialog, etc.)
+│   │   ├── layout/             # NavRail, AccountsSidebar, TopHeader
+│   │   ├── dashboard/          # NetWorthChart, MoneyFlowChart, SpendingDonutChart
+│   │   ├── accounts/           # AddAccountDialog, AccountDetailView
+│   │   ├── transactions/       # AddTransactionDialog, TransactionsView
+│   │   ├── budgets/            # BudgetsView
+│   │   ├── goals/              # GoalsView
+│   │   └── providers.tsx       # Privacy Mode, Theme & Tooltip providers
+│   └── lib/
+│       ├── auth.ts             # Better-Auth server configuration
+│       ├── auth-client.ts      # Better-Auth client hooks
+│       ├── data.ts             # High-performance server queries
+│       ├── prisma.ts           # Prisma client singleton
+│       └── utils.ts            # Classnames utility
+└── README.md
+```

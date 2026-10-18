@@ -1,0 +1,253 @@
+// Prisma schema for Sure Next
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// -------------------------------------------------------------
+// Better-Auth Core Models
+// -------------------------------------------------------------
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Tenancy & Authorization
+  familyId      String?
+  family        Family?   @relation(fields: [familyId], references: [id], onDelete: SetNull)
+  role          String    @default("admin") // admin, member, guest
+
+  sessions      Session[]
+  accounts      Account[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@map("verification")
+}
+
+// -------------------------------------------------------------
+// Sure Domain Models
+// -------------------------------------------------------------
+
+model Family {
+  id                 String             @id @default(uuid())
+  name               String
+  currency           String             @default("USD")
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  users              User[]
+  financialAccounts  FinancialAccount[]
+  categories         Category[]
+  merchants          Merchant[]
+  transactions       Transaction[]
+  budgets            Budget[]
+  goals              Goal[]
+
+  @@map("families")
+}
+
+enum AccountClassification {
+  ASSET
+  LIABILITY
+}
+
+enum AccountType {
+  DEPOSITORY
+  INVESTMENT
+  CRYPTO
+  PROPERTY
+  VEHICLE
+  OTHER_ASSET
+  CREDIT_CARD
+  LOAN
+  OTHER_LIABILITY
+}
+
+model FinancialAccount {
+  id                 String                @id @default(uuid())
+  familyId           String
+  family             Family                @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  name               String
+  type               AccountType           @default(DEPOSITORY)
+  classification     AccountClassification @default(ASSET)
+  subtype            String?
+  balance            Decimal               @default(0.0) @db.Decimal(19, 4)
+  cashBalance        Decimal               @default(0.0) @db.Decimal(19, 4)
+  currency           String                @default("USD")
+  institutionName    String?
+  notes              String?
+  status             String                @default("active") // active, disabled, syncing, error
+  excludeFromReports Boolean               @default(false)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  transactions       Transaction[]
+  balances           DailyBalance[]
+
+  @@index([familyId])
+  @@map("financial_accounts")
+}
+
+model Category {
+  id                 String             @id @default(uuid())
+  familyId           String
+  family             Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  name               String
+  color              String?            @default("#64748b")
+  icon               String?            @default("tag")
+  group              String             @default("Variable Expenses") // Income, Fixed Expenses, Variable Expenses, Debt, Savings
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  transactions       Transaction[]
+  budgets            Budget[]
+
+  @@unique([familyId, name])
+  @@index([familyId])
+  @@map("categories")
+}
+
+model Merchant {
+  id                 String             @id @default(uuid())
+  familyId           String
+  family             Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  name               String
+  logoUrl            String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  transactions       Transaction[]
+
+  @@unique([familyId, name])
+  @@index([familyId])
+  @@map("merchants")
+}
+
+model Transaction {
+  id                 String             @id @default(uuid())
+  familyId           String
+  family             Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  accountId          String
+  account            FinancialAccount   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  categoryId         String?
+  category           Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  merchantId         String?
+  merchant           Merchant?          @relation(fields: [merchantId], references: [id], onDelete: SetNull)
+  name               String
+  // In Sure convention: positive = outflow (expense), negative = inflow (income)
+  amount             Decimal            @db.Decimal(19, 4)
+  currency           String             @default("USD")
+  date               DateTime
+  notes              String?
+  excludedFromBudget Boolean            @default(false)
+  pending            Boolean            @default(false)
+  transferId         String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([familyId])
+  @@index([accountId])
+  @@index([date])
+  @@map("transactions")
+}
+
+model Budget {
+  id                 String             @id @default(uuid())
+  familyId           String
+  family             Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  categoryId         String
+  category           Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  month              String             // YYYY-MM
+  amount             Decimal            @default(0.0) @db.Decimal(19, 4)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@unique([familyId, categoryId, month])
+  @@index([familyId, month])
+  @@map("budgets")
+}
+
+model Goal {
+  id                 String             @id @default(uuid())
+  familyId           String
+  family             Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  name               String
+  targetAmount       Decimal            @db.Decimal(19, 4)
+  currentAmount      Decimal            @default(0.0) @db.Decimal(19, 4)
+  targetDate         DateTime?
+  status             String             @default("active") // active, completed, cancelled
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([familyId])
+  @@map("goals")
+}
+
+model DailyBalance {
+  id                 String             @id @default(uuid())
+  accountId          String
+  account            FinancialAccount   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  date               DateTime
+  balance            Decimal            @db.Decimal(19, 4)
+  cashBalance        Decimal            @default(0.0) @db.Decimal(19, 4)
+  currency           String             @default("USD")
+  inflows            Decimal            @default(0.0) @db.Decimal(19, 4)
+  outflows           Decimal            @default(0.0) @db.Decimal(19, 4)
+  createdAt          DateTime           @default(now())
+
+  @@unique([accountId, date])
+  @@index([accountId, date])
+  @@map("daily_balances")
+}
