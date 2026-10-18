@@ -111,5 +111,20 @@ sure-next/
 │       ├── data.ts             # High-performance server queries
 │       ├── prisma.ts           # Prisma client singleton
 │       └── utils.ts            # Classnames utility
+├── CONTRIBUTING.md      # Contribution guidelines & development setup
+├── LICENSE              # MIT Open Source License
 └── README.md
 ```
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please check out [CONTRIBUTING.md](CONTRIBUTING.md) for local development instructions, coding guidelines, and pull request procedures.
+
+---
+
+## 📄 License
+
+This project is open-source software licensed under the [MIT License](LICENSE).
+
